@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Heed Wake Word</title>
+  <style>
+    :root {
+      --bg: #12161a; --fg: #e9edee; --muted: #9aa6a6;
+      --accent: #2f6f6a; --danger: #d15b3c; --line: #2c3438;
+    }
+    body {
+      width: 260px; margin: 0; padding: 14px;
+      background: var(--bg); color: var(--fg);
+      font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+    }
+    h1 { font-size: 14px; margin: 0 0 2px; }
+    .phrase { color: var(--accent); font-weight: 600; }
+    .muted { color: var(--muted); font-size: 12px; }
+    button {
+      width: 100%; margin-top: 10px; padding: 8px 10px;
+      background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    button.stop { background: var(--danger); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-row {
+      display: flex; align-items: center; gap: 6px; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid var(--line);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.live { background: var(--accent); }
+    a { color: var(--accent); }
+    #error { color: var(--danger); font-size: 12px; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>Heed Wake Word</h1>
+  <div id="phrase-line" class="muted">Loading model…</div>
+
+  <button id="grant-btn" style="display:none;">Open settings to grant mic access</button>
+  <button id="toggle-btn" disabled>Start listening</button>
+
+  <div class="status-row">
+    <span class="dot" id="status-dot"></span>
+    <span class="muted" id="status-text">stopped</span>
+  </div>
+  <div class="muted" id="last-detect" style="margin-top:6px;"></div>
+  <div id="error"></div>
+
+  <div class="muted" style="margin-top:12px;">
+    <a href="#" id="open-options">Set target page →</a>
+  </div>
+  <div class="muted" style="margin-top:4px;">
+    <a href="debug.html" target="_blank">Open pipeline debug view →</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

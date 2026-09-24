@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Heed Wake Word — Pipeline Debug</title>
+  <style>
+    :root {
+      --bg: #12161a; --fg: #e9edee; --muted: #9aa6a6;
+      --accent: #2f6f6a; --trigger: #56d364; --danger: #d15b3c;
+      --bar-bg: #1a2024; --line: #2c3438;
+    }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      margin: 0; padding: 2rem;
+      background: var(--bg); color: var(--fg);
+      max-width: 860px; margin-inline: auto;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+    h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em;
+         color: var(--muted); margin: 0 0 0.6rem; font-weight: 600; }
+    .sub { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel {
+      background: #161b22; border: 1px solid var(--line);
+      border-radius: 8px; padding: 1.1rem; margin-bottom: 1rem;
+    }
+    canvas { display: block; width: 100%; border-radius: 4px; background: #0d0f1a; }
+    .bar {
+      position: relative; height: 22px; background: var(--bar-bg);
+      border-radius: 4px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; background: var(--accent); width: 0%;
+      transition: width 60ms linear, background 150ms;
+    }
+    .bar-fill.triggered { background: var(--trigger); }
+    .bar-fill.refractory { background: var(--danger); }
+    .bar-marker {
+      position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--muted);
+    }
+    .label-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem;
+    }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 1.2rem; font-size: 0.85rem; }
+    .stats span:nth-child(odd) { color: var(--muted); }
+    .dot { display:inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; }
+    .dot.live { background: var(--accent); }
+    .trigger-log {
+      max-height: 140px; overflow-y: auto;
+      font-family: ui-monospace, monospace; font-size: 0.82rem; color: var(--muted);
+    }
+    .trigger-log .pulse { color: var(--trigger); font-weight: bold; }
+    .legend { display:flex; align-items:center; gap:8px; font-size:0.75rem; color:var(--muted); margin-top:6px; }
+    .legend-bar { height:8px; flex:1; max-width:160px; border-radius:4px;
+      background:linear-gradient(to right, #2a1a52, #7a2f6e, #d15b3c, #f4c956); border:1px solid var(--line); }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Heed Wake Word — Pipeline Debug</h1>
+  <p class="sub">Every stage the model actually goes through, live: raw mic → filtered audio → the mel spectrogram picture → the raw model logit → the trigger state machine. Leave this tab open while you talk; it only watches, it doesn't hold the microphone.</p>
+
+  <div class="panel">
+    <div><span class="dot" id="status-dot"></span><span id="status-text">no data yet — is the extension listening?</span></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>1 — Raw mic (latest ~100ms)</h2>
+      <canvas id="raw-wave" width="360" height="90"></canvas>
+    </div>
+    <div class="panel">
+      <h2>2 — Filtered (high-pass + notch)</h2>
+      <canvas id="filt-wave" width="360" height="90"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3 — Mel spectrogram (what the model sees, 40 bins × 101 frames)</h2>
+    <canvas id="mel-canvas" width="600" height="140"></canvas>
+    <div class="legend"><span>low energy</span><span class="legend-bar"></span><span>high energy</span></div>
+    <div class="sub" style="margin:6px 0 0;">Empty/flat while gated — the model only runs, and this only updates, when the energy gate passes.</div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>4 — Model output</h2>
+      <div class="stats" style="margin-bottom:8px;">
+        <span>phrase</span><span id="phrase-val">-</span>
+        <span>raw logit (pre-sigmoid)</span><span id="logit-val">-</span>
+        <span>probability</span><span id="prob-val">-</span>
+        <span>smoothed (EMA)</span><span id="ema-val">-</span>
+      </div>
+      <div class="bar">
+        <div id="prob-bar" class="bar-fill"></div>
+        <div id="thresh-marker" class="bar-marker" style="left: 50%"></div>
+      </div>
+      <div class="label-row"><span>0.0</span><span>threshold: <span id="thresh-label">-</span></span><span>1.0</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>5 — Trigger state machine</h2>
+      <div class="stats" style="margin-bottom:8px;">
+        <span>energy gate</span><span id="gate-val">-</span>
+        <span>frames above threshold</span><span id="above-val">-</span>
+      </div>
+      <div class="bar"><div id="refractory-bar" class="bar-fill refractory" style="width:0%"></div></div>
+      <div class="label-row"><span id="refractory-label">refractory: idle</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <strong>Triggers</strong>
+    <div id="trigger-log" class="trigger-log">(none yet)</div>
+  </div>
+
+  <div class="panel">
+    <strong>Extension log</strong>
+    <p class="sub" style="margin: 0.2rem 0 0.6rem;">
+      What background.js and offscreen.js actually did, in order — read this
+      instead of Chrome's own DevTools "Inspect views" if something isn't
+      working (that navigation can be flaky for offscreen documents).
+    </p>
+    <div id="ext-log" class="trigger-log" style="max-height: 220px;">(nothing logged yet)</div>
+  </div>
+
+  <script src="debug.js"></script>
+</body>
+</html>

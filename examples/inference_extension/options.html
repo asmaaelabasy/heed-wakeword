@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Heed Wake Word — Settings</title>
+  <style>
+    body {
+      max-width: 480px; margin: 40px auto; padding: 0 16px;
+      background: #12161a; color: #e9edee;
+      font: 14px/1.6 "Segoe UI", system-ui, sans-serif;
+    }
+    h1 { font-size: 18px; }
+    label { display: block; margin: 16px 0 6px; color: #9aa6a6; font-size: 13px; }
+    input {
+      width: 100%; box-sizing: border-box; padding: 8px 10px;
+      background: #1a2024; border: 1px solid #2c3438; border-radius: 6px;
+      color: #e9edee; font-size: 14px;
+    }
+    button {
+      margin-top: 14px; padding: 8px 16px; background: #2f6f6a; color: #fff;
+      border: 0; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #saved { color: #2f6f6a; font-size: 13px; margin-left: 10px; display: none; }
+    .hint { color: #9aa6a6; font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Heed Wake Word — Settings</h1>
+
+  <label>Microphone access</label>
+  <div id="mic-status" class="hint">checking…</div>
+  <button id="grant-btn" style="display:none;">Grant microphone access</button>
+  <p class="hint">
+    Requested here, once, because a browser-action popup closes the instant a
+    permission prompt appears — it can't complete the request itself. After
+    granting it here, the hidden listener page reuses the same grant
+    automatically (same extension origin).
+  </p>
+
+  <label for="target-url">Page to open/focus when the wake word is heard</label>
+  <input id="target-url" type="url" placeholder="https://example.com/dashboard" />
+  <p class="hint">If a matching tab is already open, it's brought to the front instead of opening a new one.</p>
+  <button id="save-btn">Save</button>
+  <span id="saved">Saved.</span>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -73,7 +73,7 @@ def _hann() -> torch.Tensor:
 
 def log_mel(audio: torch.Tensor, apply_cmn: bool = True) -> torch.Tensor:
     """Compute log-mel spectrogram. Input (T,) or (B, T); output (B, n_mels, F).
-
+ 
     When `apply_cmn` is True (default), subtracts the per-clip mean across
     time from each mel bin. This is **cepstral mean normalization** - a
     standard ASR trick that makes the representation invariant to mic
